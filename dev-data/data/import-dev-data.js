@@ -1,6 +1,6 @@
+const fs = require('fs');
 const connectdb = require('../../src/db');
 const Tour = require('../../models/tourModel');
-const fs = require('fs');
 
 connectdb();
 
