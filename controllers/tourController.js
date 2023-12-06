@@ -9,7 +9,7 @@ exports.aliasTopTours = async (req, res, next) => {
 };
 exports.getAllTours = async (req, res) => {
   try {
-    const features = new APIFeatures(Tour, req.query)
+    const features = new APIFeatures(Tour.find(), req.query)
       .filter()
       .sort()
       .limitFields()
@@ -37,6 +37,111 @@ exports.getTour = async (req, res) => {
     });
   } catch (err) {
     res.status(400).json({
+      status: 'fail',
+      message: err
+    });
+  }
+};
+exports.getTourStats = async (req, res) => {
+  try {
+    const stats = await Tour.aggregate([
+      // filter the data that has rating greter than 4.5
+      {
+        $match: { ratingsAverage: { $gte: 4.5 } }
+      },
+      //from the filterd data group the data by
+      // difficulty and should show the following
+      {
+        $group: {
+          _id: '$difficulty',
+          numTours: { $sum: 1 },
+          numRatings: { $sum: '$ratingsQuantity' },
+          avgRating: { $avg: '$ratingsAverage' },
+          avgPrice: { $avg: '$price' },
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' }
+        }
+      },
+      // sort by the feilds that we have given above
+      // and sort by acc(1) or dec(-1)
+      {
+        $sort: {
+          avgRating: 1
+        }
+      },
+      {
+        $match: { _id: { $ne: 'easy' } }
+      }
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        stats
+      }
+    });
+  } catch (err) {
+    res.status(404).json({
+      status: 'fail',
+      message: err
+    });
+  }
+};
+exports.getMonthlyPlan = async (req, res) => {
+  try {
+    const year = +req.params.year;
+    const plan = await Tour.aggregate([
+      //unwind destructs the start dates array
+      {
+        $unwind: '$startDates'
+      },
+      // filter the data that has rating greter than 4.5
+      {
+        $match: {
+          startDates: {
+            $gte: new Date(`${year}-01-01`),
+            $lte: new Date(`${year}-12-31`)
+          }
+        }
+      },
+      //from the filterd data group the data by
+      // difficulty and should show the following
+      {
+        $group: {
+          _id: { $month: '$startDates' },
+          numTours: { $sum: 1 },
+          tours: { $push: '$name' }
+        }
+      },
+      // sort by the feilds that we have given above
+      // and sort by acc(1) or dec(-1)
+      {
+        $sort: {
+          _id: 1
+        }
+      },
+      //helps to add feilds to the filtered group
+      {
+        $addFields: {
+          month: '$_id'
+        }
+      },
+      //helps to remove the feild from the filtered proup
+      {
+        $project: {
+          _id: 0
+        }
+      }
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        plan
+      }
+    });
+  } catch (err) {
+    res.status(404).json({
       status: 'fail',
       message: err
     });

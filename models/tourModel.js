@@ -19,11 +19,11 @@ const tourSchema = new mongoose.Schema(
       type: String,
       required: [true, 'A tour must have a difficulty']
     },
-    ratingAverage: {
+    ratingsAverage: {
       type: Number,
       default: 4.5
     },
-    ratingQuantity: {
+    ratingsQuantity: {
       type: Number,
       default: 0
     },
@@ -43,9 +43,9 @@ const tourSchema = new mongoose.Schema(
     },
     imageCover: {
       type: String,
-      required: [true,"A tour must have a cover image"]
+      required: [true, 'A tour must have a cover image']
     },
-    images:[String],
+    images: [String],
     startDates: [Date]
   },
   { timestamps: true }
