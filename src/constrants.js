@@ -1,0 +1,1 @@
+exports.db_name = "natures"
