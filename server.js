@@ -7,3 +7,5 @@ connectdb().then(() => {
     console.log(`👻 👻  App is running at port ${port}`);
   });
 });
+
+//TEST
