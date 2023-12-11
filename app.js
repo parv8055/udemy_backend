@@ -26,7 +26,7 @@ app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 
 
-//hanlding router that is undefined and sending it to the errcontroller by next(err)
+//handling router that is undefined and sending it to the errcontroller by next(err)
 app.all('*', (req, res, next) => {
   next(new ApiError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
