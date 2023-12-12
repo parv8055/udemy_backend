@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const ApiError = require('../src/utils/ApiError');
 const ApiResponse = require('../src/utils/ApiResponse');
 const catchAsync = require('../src/utils/catchAsync');
@@ -60,4 +61,27 @@ exports.login = catchAsync(async (req, res, next) => {
 
   const token = existedUser.generateAccessToken();
   res.status(200).json({ success: true, message: '🙊Success🙊', token });
+});
+
+exports.protect = catchAsync(async (req, res, next) => {
+  // 1) checking the token
+  let token;
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startWith('Bearer')
+  ) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) {
+    throw next(
+      new ApiError('You are not logged in !Please log in to access', 401)
+    );
+  }
+  // 2) Validate the token
+      jwt.verify(token,process.env.)
+  // 3) check if the user exist
+  // 4) check if user changed password after the jwt issued
+  next();
 });
