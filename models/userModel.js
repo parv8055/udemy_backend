@@ -17,6 +17,11 @@ const userSchema = new mongoose.Schema(
       validate: [validator.isEmail, 'Please provide a valid email']
     },
     photo: String,
+    role: {
+      type: String,
+      enum: ['user', 'guide', 'lead-guide', 'admin'],
+      default: 'user'
+    },
     password: {
       type: String,
       required: [true, 'Please provide a password'],
@@ -38,7 +43,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
       select: false
-    }
+    },
+    passwordChangedAt: Date,
+    passwordResetToken: String,
+    passwordResetExpires: Date
   },
   {
     timestamps: true
@@ -68,6 +76,20 @@ userSchema.methods.generateRefreshToken = function() {
       expiresIn: process.env.REFRESH_TOKEN_EXPIRY
     }
   );
+};
+userSchema.methods.checkPassword = async function(inputPassword) {
+  return await bcrypt.compare(inputPassword, this.password);
+};
+userSchema.methods.checkPasswordIsChanged = function(tokenTimestamps) {
+  if (this.passwordChangedAt) {
+    const passwordChangedTimeStamps = this.passwordChangedAt.getTime() / 1000;
+    return passwordChangedTimeStamps > tokenTimestamps;
+    //true means changed password after token
+    //false means not changed
+  }
+
+  //false means not changed
+  return false;
 };
 userSchema.methods.checkPassword = async function(inputPassword) {
   return await bcrypt.compare(inputPassword, this.password);

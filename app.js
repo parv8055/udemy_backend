@@ -18,14 +18,12 @@ app.use(express.static(`public`));
 
 app.use((req, res, next) => {
   req.requestTime = new Date().toISOString();
-  console.log(req.headers);
   next();
 });
 
 // 3) ROUTES
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
-
 
 //handling router that is undefined and sending it to the errcontroller by next(err)
 app.all('*', (req, res, next) => {

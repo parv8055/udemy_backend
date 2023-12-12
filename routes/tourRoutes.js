@@ -9,14 +9,14 @@ router.get(
 );
 router.get('/tour-stats', tourController.getTourStats);
 router.get('/monthly-plan/:year', tourController.getMonthlyPlan);
-router
-  .route('/')
-  .get(authController.protect, tourController.getAllTours)
-  .post(tourController.createTour);
 
+router.get('/', tourController.getAllTours);
+router.get('/:id', tourController.getTour);
+
+router.use(authController.protect, authController.restrictTo('admin', 'user'));
+router.post('/', tourController.createTour);
 router
   .route('/:id')
-  .get(tourController.getTour)
   .patch(tourController.updateTour)
   .delete(tourController.deleteTour);
 

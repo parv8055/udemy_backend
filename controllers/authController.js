@@ -63,13 +63,13 @@ exports.login = catchAsync(async (req, res, next) => {
   res.status(200).json({ success: true, message: '🙊Success🙊', token });
 });
 
+//authorisation
 exports.protect = catchAsync(async (req, res, next) => {
   // 1) checking the token
   let token;
-
   if (
     req.headers.authorization &&
-    req.headers.authorization.startWith('Bearer')
+    req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
   }
@@ -80,8 +80,38 @@ exports.protect = catchAsync(async (req, res, next) => {
     );
   }
   // 2) Validate the token
-      jwt.verify(token,process.env.)
+  let decodedToken;
+  try {
+    decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+  } catch (err) {
+    throw next(new ApiError('Token is not valid', 401));
+  }
   // 3) check if the user exist
+  const existedUser = await User.findById(decodedToken?._id);
+  if (!existedUser) {
+    throw next(new ApiError('no user exists with this email', 404));
+  }
   // 4) check if user changed password after the jwt issued
+  if (existedUser.checkPasswordIsChanged(decodedToken?.iat)) {
+    throw next(
+      new ApiError('User recently changed password!please login again', 404)
+    );
+  }
+  req.user = existedUser;
   next();
 });
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    console.log(req.user.role);
+    if (!roles.includes(req.user.role)) {
+      throw next(
+        new ApiError('You do not have permission to perform this action', 403)
+      );
+    }
+    next()
+  };
+};
+
+exports.forgotpassword =catchAsync(async(req,res,next)=>{})
+exports.resetpassword =catchAsync(async(req,res,next)=>{})

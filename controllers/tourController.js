@@ -108,6 +108,7 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
 });
 
 exports.createTour = catchAsync(async (req, res, next) => {
+  console.log(req.body);
   const newTour = await Tour.create(req.body);
   res.status(201).json(new ApiResponse(201, newTour));
 });
