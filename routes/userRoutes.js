@@ -18,7 +18,13 @@ router.post(
 
 router.post('/login', authController.login);
 router.post('/forgetpassword', authController.forgotpassword);
-router.post('/resetpassword', authController.resetpassword);
+router.post('/resetpassword/:token', authController.resetpassword);
+
+router.use(authController.protect, authController.restrictTo('admin', 'user'));
+
+router.post('/updatepassword', authController.updatepassword);
+router.post('/updateMe', userController.updateMe);
+router.patch('/deleteMe', userController.deleteMe);
 
 router
   .route('/')

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema(
   {
@@ -94,6 +95,15 @@ userSchema.methods.checkPasswordIsChanged = function(tokenTimestamps) {
 userSchema.methods.checkPassword = async function(inputPassword) {
   return await bcrypt.compare(inputPassword, this.password);
 };
+userSchema.methods.createPasswordResetToken = function() {
+  //generate random token of 32 bytes
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  //encrypt the token is missing will implenent afterwards
+
+  this.passwordResetToken = resetToken;
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  return resetToken;
+};
 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
@@ -102,6 +112,12 @@ userSchema.pre('save', async function(next) {
   this.passwordConfirm = undefined;
   next();
 });
+
+userSchema.pre(/^find/, function(next) {
+  this.find({ isActive: { $ne: false } });
+  next();
+});
+
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;

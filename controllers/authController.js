@@ -5,6 +5,30 @@ const catchAsync = require('../src/utils/catchAsync');
 const uploadOnCloudinary = require('../src/utils/cloudinary');
 const User = require('./../models/userModel');
 
+const responseCookies = (user, statusCode, res) => {
+  const token = user.generateAccessToken();
+  const cookieOptions = {
+    expires: new Date(
+      //90 days from now
+      Date.now() + process.env.JWT_TOKEN_COOKIE_EXPIRY * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true
+  };
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+
+  res.cookie('token', token, cookieOptions);
+
+  // Remove password from output
+  user.password = undefined;
+
+  res.status(statusCode).json({
+    success: true,
+    message: '🙊Success🙊',
+    token,
+    user
+  });
+};
+
 exports.signup = catchAsync(async (req, res, next) => {
   const { name, email, password, passwordConfirm } = req.body;
 
@@ -38,10 +62,7 @@ exports.signup = catchAsync(async (req, res, next) => {
       new ApiError('Something went Wrong While registering the user', 500)
     );
   }
-  const token = createdUser.generateAccessToken();
-  res
-    .status(201)
-    .json({ success: true, message: '🙊Success🙊', token, createdUser });
+  responseCookies(createdUser, 201, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -109,9 +130,52 @@ exports.restrictTo = (...roles) => {
         new ApiError('You do not have permission to perform this action', 403)
       );
     }
-    next()
+    next();
   };
 };
 
-exports.forgotpassword =catchAsync(async(req,res,next)=>{})
-exports.resetpassword =catchAsync(async(req,res,next)=>{})
+exports.forgotpassword = catchAsync(async (req, res, next) => {
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) {
+    throw next(new ApiError('no user exists with this email', 404));
+  }
+  const resetToken = user.createPasswordResetToken();
+  //deactivate validators for saving
+  user.save({ validateBeforeSave: false });
+  //link to be send to the mail
+  const resetUrl = `${req.protocol}://${req.get(
+    'host'
+  )}/api/vi/users/resetpassword/${resetToken}`;
+  res.status(201).json(new ApiResponse(201, resetToken));
+});
+exports.resetpassword = catchAsync(async (req, res, next) => {
+  const user = await User.findOne({
+    passwordResetToken: req.params.token,
+    passwordResetExpires: { $gt: Date.now() }
+  });
+  if (!user) {
+    throw next(new ApiError('Token is invalid or has expired', 404));
+  }
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  user.save();
+  const token = user.generateAccessToken();
+  res.status(200).json({ success: true, message: '🙊Success🙊', token });
+});
+exports.updatepassword = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user._id).select('+password');
+  if (!user) {
+    throw next(new ApiError('no user exists', 404));
+  }
+  const isCorrect = await user.checkPassword(req.body.currentPassword);
+  if (!isCorrect) {
+    throw next(new ApiError('current password is not correct', 404));
+  }
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  await user.save();
+  const token = user.generateAccessToken();
+  res.status(200).json({ success: true, message: '🙊Success🙊', token });
+});
