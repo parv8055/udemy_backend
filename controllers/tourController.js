@@ -22,7 +22,10 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 
 exports.getTour = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const tour = await Tour.findById(id);
+
+  //filling the guides in the tour with the id using populate
+  // const tour = await Tour.findById(id).populate('guides');
+  const tour = await Tour.findById(id)
   res.status(201).json(new ApiResponse(201, tour));
 });
 exports.getTourStats = catchAsync(async (req, res) => {

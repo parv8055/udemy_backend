@@ -6,9 +6,7 @@ connectdb();
 
 // node -r dotenv/config dev-data/data/import-dev-data.js --import
 // node -r dotenv/config dev-data/data/import-dev-data.js --delete
-const tours = JSON.parse(
-  fs.readFileSync(`${__dirname}/tours-simple.json`, 'utf-8')
-);
+const tours = JSON.parse(fs.readFileSync(`${__dirname}/tours.json`, 'utf-8'));
 const importData = async () => {
   try {
     await Tour.create(tours);

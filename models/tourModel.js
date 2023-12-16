@@ -72,7 +72,37 @@ const tourSchema = new mongoose.Schema(
     secretTour: {
       type: Boolean,
       default: false
-    }
+    },
+    startLocation: {
+      // GeoJSON
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point']
+      },
+      coordinates: [Number],
+      address: String,
+      description: String
+    },
+    locations: [
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point']
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number
+      }
+    ],
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
+      }
+    ]
   },
   //enabling the virtual properties to show
   {
@@ -85,6 +115,16 @@ const tourSchema = new mongoose.Schema(
 //create a viratural property that we create when fetch
 tourSchema.virtual('durationWeeks').get(function() {
   return this.duration / 7;
+});
+
+// Virtual populate
+tourSchema.virtual('reviews', {
+  // name of the model
+  ref: 'Review',
+  // name of the field in the review model
+  foreignField: 'tour',
+  // name of the field in the tour model
+  localField: '_id'
 });
 
 //only activated when .save() and .create() not on .insertMany()
@@ -107,6 +147,15 @@ tourSchema.pre(/^find/, function(next) {
   // tourSchema.pre('find', function(next) {
   this.find({ secretTour: { $ne: true } });
   // this.start = Date.now();
+  next();
+});
+
+//populating the query before finding the data and selecing the feilds
+tourSchema.pre(/^find/, function(next) {
+  this.populate({
+    path: 'guides',
+    select: '-__v -passwordChangedAt'
+  });
   next();
 });
 
